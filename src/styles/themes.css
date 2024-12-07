@@ -1,0 +1,60 @@
+/* Existing theme variables */
+:root {
+  --strat-primary: #1b1464;
+  --strat-secondary: #ed1c24;
+  --strat-primary-hover: #2d237a;
+  --strat-secondary-hover: #d31118;
+}
+
+/* Existing theme classes */
+/* ... keep all your existing theme classes ... */
+
+/* Add these new mobile-specific classes */
+.strat-mobile-nav {
+@apply fixed inset-y-0 left-0 w-64 bg-white transform transition-transform duration-200 ease-in-out z-50;
+}
+
+.strat-mobile-nav-link {
+@apply flex items-center space-x-2 p-3 hover:bg-[var(--strat-primary)] hover:text-white rounded-md transition-colors duration-150;
+}
+
+/* Responsive modifications */
+@media (max-width: 768px) {
+.strat-navbar {
+  @apply px-4 py-2;
+}
+
+.strat-container {
+  @apply p-4 shadow-sm;
+}
+
+.strat-button {
+  @apply px-3 py-2 text-sm;
+}
+
+.strat-input {
+  @apply text-base p-2;
+}
+
+.strat-table-header {
+  @apply p-3;
+}
+
+.strat-touch-input {
+  @apply p-3 text-base;
+  min-height: 44px;
+}
+}
+
+/* Mobile-optimized table alternatives */
+.strat-table-card {
+@apply bg-white rounded-lg shadow-sm p-4 mb-4;
+}
+
+.strat-table-card-header {
+@apply flex justify-between items-center mb-3;
+}
+
+.strat-table-card-content {
+@apply space-y-2;
+}

@@ -1,0 +1,173 @@
+# Theme Configuration Guide
+
+## Table of Contents
+1. [Basic Theme Configuration](#basic-theme-configuration)
+2. [Color System](#color-system)
+3. [Logo & Background Settings](#logo--background-settings)
+4. [Common Customizations](#common-customizations)
+5. [Advanced Usage](#advanced-usage)
+
+## Basic Theme Configuration
+
+Theme changes are managed through the `theme.config.js` file located in `src/config/`. This is your central location for all visual customizations.
+
+### Example Configuration
+```javascript
+// src/config/theme.config.js
+const themeConfig = {
+  colors: {
+    primary: {
+      main: '#1b1464',      // Main brand color
+      hover: '#2d237a',     // Hover state
+      light: '#2f2578',     // Lighter variant
+      dark: '#130f4a',      // Darker variant
+      contrast: '#ffffff'   // Text color on primary background
+    },
+    secondary: {
+      main: '#ed1c24',      // Secondary brand color
+      hover: '#d31118',     // Hover state
+      light: '#ff343b',     // Lighter variant
+      dark: '#b8151b',      // Darker variant
+      contrast: '#ffffff'   // Text color on secondary background
+    }
+  },
+  branding: {
+    companyName: 'STRAT Fire Security',
+    companyShortName: 'STRAT',
+    logo: {
+      path: '/images/logo-pattern.svg',
+      background: {
+        size: '400px',
+        opacity: 0.05,
+        angle: '-15deg',
+        spacingX: '300px',
+        spacingY: '300px',
+        animationDuration: '60s',
+        enabled: true
+      }
+    }
+  }
+};
+```
+
+## Color System
+
+### Changing Brand Colors
+To change your brand colors, modify the color values in the config:
+
+```javascript
+colors: {
+  primary: {
+    main: '#YOUR_NEW_COLOR',
+    hover: '#HOVER_COLOR',
+    // ...
+  }
+}
+```
+
+### Available Color Properties
+- `main`: Primary color for components
+- `hover`: Color for hover states
+- `light`: Lighter variant for backgrounds
+- `dark`: Darker variant for emphasis
+- `contrast`: Text color to use on this background
+
+## Logo & Background Settings
+
+### Logo Configuration
+```javascript
+branding: {
+  logo: {
+    path: '/images/your-logo.svg',    // Path to your logo file
+    background: {
+      size: '400px',                  // Size of background pattern
+      opacity: 0.05,                  // Opacity (0-1)
+      angle: '-15deg',                // Rotation angle
+      spacingX: '300px',              // Horizontal spacing
+      spacingY: '300px',              // Vertical spacing
+      animationDuration: '60s',       // Animation speed
+      enabled: true                   // Toggle background
+    }
+  }
+}
+```
+
+### Background Pattern Settings
+- `size`: Controls the size of the repeated pattern
+- `opacity`: Controls how visible the pattern is (0 = invisible, 1 = fully visible)
+- `angle`: Rotates the pattern (e.g., '45deg', '-90deg')
+- `spacingX/Y`: Controls the distance between pattern repetitions
+- `animationDuration`: Controls how fast the pattern moves
+
+## Common Customizations
+
+### Change Company Name
+```javascript
+branding: {
+  companyName: 'Your Company Name',
+  companyShortName: 'YCN'
+}
+```
+
+### Adjust Logo Background
+```javascript
+// Make background more subtle
+background: {
+  opacity: 0.03,
+  size: '600px'
+}
+
+// Change animation speed
+background: {
+  animationDuration: '90s'  // Slower
+  // or
+  animationDuration: '30s'  // Faster
+}
+```
+
+### Disable Background Pattern
+```javascript
+background: {
+  enabled: false
+}
+```
+
+## Advanced Usage
+
+### Custom Pattern
+1. Create your SVG pattern
+2. Place it in `public/images/`
+3. Update the config:
+```javascript
+logo: {
+  path: '/images/your-pattern.svg'
+}
+```
+
+### Responsive Adjustments
+Modify the layout settings for different screen sizes:
+```javascript
+layout: {
+  maxWidth: '80rem',
+  containerPadding: {
+    mobile: '1rem',
+    tablet: '2rem',
+    desktop: '4rem'
+  }
+}
+```
+
+### Additional Theme Properties
+You can add custom properties:
+```javascript
+themeConfig: {
+  // ... existing config
+  custom: {
+    borderRadius: '0.5rem',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    transition: '0.3s ease-in-out'
+  }
+}
+```
+
+Remember to restart your development server after making changes to the theme configuration to ensure all changes are applied properly.
