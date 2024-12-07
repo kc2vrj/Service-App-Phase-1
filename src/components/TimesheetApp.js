@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Clock, Plus, Trash2, Edit2, MapPin } from 'lucide-react';
 import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { useAuth } from '../contexts/AuthContext';
 import TimesheetForm from './TimesheetForm';
 
-export default function TimesheetApp() {
+const TimesheetApp = ({ user }) => {
   const [entries, setEntries] = useState([]);
   const [editingEntry, setEditingEntry] = useState(null);
-  const { user } = useAuth();
 
   useEffect(() => {
     if (!user) return;
@@ -45,28 +43,37 @@ export default function TimesheetApp() {
     try {
       const { id, ...updateData } = formData;
       await updateDoc(doc(db, 'timesheet_entries', id), updateData);
+      setEditingEntry(null);
     } catch (error) {
       console.error('Error updating entry:', error);
     }
   };
 
   const handleDeleteEntry = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'timesheet_entries', id));
-    } catch (error) {
-      console.error('Error deleting entry:', error);
+    if (window.confirm('Are you sure you want to delete this entry?')) {
+      try {
+        await deleteDoc(doc(db, 'timesheet_entries', id));
+      } catch (error) {
+        console.error('Error deleting entry:', error);
+      }
     }
   };
 
   const renderLocationInfo = (entry, field) => {
-    // First check if we have location data
+    if (entry.addresses?.[field]) {
+      return (
+        <div className="text-xs text-gray-500 mt-1">
+          <MapPin className="w-3 h-3 inline mr-1" />
+          {entry.addresses[field]}
+        </div>
+      );
+    }
+    // Fallback to coordinates if no address is available
     if (entry.location?.[field]) {
       return (
         <div className="text-xs text-gray-500 mt-1">
           <MapPin className="w-3 h-3 inline mr-1" />
-          {/* Show address if available, otherwise show coordinates */}
-          {entry.addresses?.[field] || 
-           `${entry.location[field].latitude.toFixed(6)}, ${entry.location[field].longitude.toFixed(6)}`}
+          {`${entry.location[field].latitude.toFixed(6)}, ${entry.location[field].longitude.toFixed(6)}`}
         </div>
       );
     }
@@ -157,4 +164,6 @@ export default function TimesheetApp() {
       </div>
     </div>
   );
-}
+};
+
+export default TimesheetApp;

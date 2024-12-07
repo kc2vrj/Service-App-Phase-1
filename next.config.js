@@ -41,11 +41,36 @@ const nextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'private-state-token-redemption=(), private-state-token-issuance=(), browsing-topics=()'
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: process.env.NODE_ENV === 'production' 
+              ? "default-src 'self'; " +
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseapp.com https://*.googleapis.com https://cdnjs.cloudflare.com; " +
+                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+                "img-src 'self' data: https://*; " +
+                "font-src 'self' data: https://cdnjs.cloudflare.com; " +
+                "frame-src 'self' https://*.firebaseapp.com https://*.firebase.com; " +
+                "connect-src 'self' https://*.firebase.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.googleapis.com wss://*.firebaseio.com; " +
+                "form-action 'self';"
+              : "default-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.firebaseapp.com https://*.googleapis.com"
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
           }
         ]
       }
-    ]
+    ];
   }
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
