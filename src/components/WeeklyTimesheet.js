@@ -37,7 +37,6 @@ const WeeklyTimesheet = ({ user }) => {
           ...doc.data()
         }));
 
-        // Filter for current week's entries and sort by date
         allEntries = allEntries
           .filter(entry => entry.date >= currentWeek[0] && entry.date <= currentWeek[6])
           .sort((a, b) => b.date.localeCompare(a.date));
@@ -71,16 +70,20 @@ const WeeklyTimesheet = ({ user }) => {
     }
   };
 
-  const renderLocationInfo = (entry, field) => {
-    if (entry.addresses?.[field]) {
-      return (
-        <div className="text-xs text-gray-500 mt-1">
-          <MapPin className="w-3 h-3 inline mr-1" />
-          {entry.addresses[field]}
-        </div>
-      );
-    }
-    return null;
+  const renderLocation = (entry, field) => {
+    if (!entry[field]) return '-';
+
+    return (
+      <div className="py-1">
+        <div>{entry[field]}</div>
+        {entry.addresses?.[field] && (
+          <div className="text-xs text-gray-500 mt-1">
+            <MapPin className="w-3 h-3 inline mr-1" />
+            {entry.addresses[field]}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -134,20 +137,16 @@ const WeeklyTimesheet = ({ user }) => {
               <tr key={entry.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2">{entry.date}</td>
                 <td className="px-4 py-2 whitespace-normal">
-                  <div>{entry.travelStart || '-'}</div>
-                  {renderLocationInfo(entry, 'travelStart')}
+                  {renderLocation(entry, 'travelStart')}
                 </td>
                 <td className="px-4 py-2 whitespace-normal">
-                  <div>{entry.timeIn || '-'}</div>
-                  {renderLocationInfo(entry, 'timeIn')}
+                  {renderLocation(entry, 'timeIn')}
                 </td>
                 <td className="px-4 py-2 whitespace-normal">
-                  <div>{entry.timeOut || '-'}</div>
-                  {renderLocationInfo(entry, 'timeOut')}
+                  {renderLocation(entry, 'timeOut')}
                 </td>
                 <td className="px-4 py-2 whitespace-normal">
-                  <div>{entry.travelHome || '-'}</div>
-                  {renderLocationInfo(entry, 'travelHome')}
+                  {renderLocation(entry, 'travelHome')}
                 </td>
                 <td className="px-4 py-2">{entry.customerName}</td>
                 <td className="px-4 py-2">{entry.workOrder}</td>
