@@ -9,6 +9,7 @@ const WeeklyTimesheet = ({ user }) => {
   const [entries, setEntries] = useState([]);
   const [editingEntry, setEditingEntry] = useState(null);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   function getWeekDates(date = new Date()) {
     const curr = new Date(date);
@@ -24,6 +25,7 @@ const WeeklyTimesheet = ({ user }) => {
     if (!user) return;
 
     const fetchWeekEntries = async () => {
+      setLoading(true);
       try {
         const entriesRef = collection(db, 'timesheet_entries');
         const q = query(
@@ -46,6 +48,8 @@ const WeeklyTimesheet = ({ user }) => {
       } catch (error) {
         console.error('Error fetching entries:', error);
         setError('Failed to load timesheet entries');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -60,19 +64,40 @@ const WeeklyTimesheet = ({ user }) => {
     });
   };
 
+  const handleUpdateEntry = async (formData) => {
+    try {
+      const { id, ...updateData } = formData;
+      await updateDoc(doc(db, 'timesheet_entries', id), updateData);
+      setEditingEntry(null);
+      
+      // Update local state
+      setEntries(prevEntries =>
+        prevEntries.map(entry =>
+          entry.id === id ? { ...entry, ...updateData } : entry
+        )
+      );
+    } catch (error) {
+      console.error('Error updating entry:', error);
+      setError('Failed to update entry');
+    }
+  };
+
   const handleDeleteEntry = async (id) => {
-    if (window.confirm('Are you sure you want to delete this entry?')) {
-      try {
-        await deleteDoc(doc(db, 'timesheet_entries', id));
-      } catch (error) {
-        console.error('Error deleting entry:', error);
-      }
+    if (!window.confirm('Are you sure you want to delete this entry?')) return;
+    
+    try {
+      await deleteDoc(doc(db, 'timesheet_entries', id));
+      // Update local state
+      setEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      setError('Failed to delete entry');
     }
   };
 
   const renderLocation = (entry, field) => {
     if (!entry[field]) return '-';
-
+    
     return (
       <div className="py-1">
         <div>{entry[field]}</div>
@@ -86,14 +111,24 @@ const WeeklyTimesheet = ({ user }) => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-6">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
-      {error && (
-        <div className="mb-4 text-red-500">
-          {error}
-        </div>
-      )}
-
       <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow">
         <button
           onClick={() => changeWeek('prev')}
@@ -103,9 +138,16 @@ const WeeklyTimesheet = ({ user }) => {
         </button>
 
         <div className="text-lg font-semibold">
-          {new Date(currentWeek[0]).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+          {new Date(currentWeek[0]).toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric' 
+          })}
           {' - '}
-          {new Date(currentWeek[6]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+          {new Date(currentWeek[6]).toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric', 
+            year: 'numeric' 
+          })}
         </div>
 
         <button
@@ -179,15 +221,7 @@ const WeeklyTimesheet = ({ user }) => {
           <div className="bg-white rounded-lg max-w-2xl w-full">
             <TimesheetForm 
               initialData={editingEntry}
-              onSubmit={async (formData) => {
-                try {
-                  const { id, ...updateData } = formData;
-                  await updateDoc(doc(db, 'timesheet_entries', id), updateData);
-                  setEditingEntry(null);
-                } catch (error) {
-                  console.error('Error updating entry:', error);
-                }
-              }}
+              onSubmit={handleUpdateEntry}
               onCancel={() => setEditingEntry(null)}
             />
           </div>

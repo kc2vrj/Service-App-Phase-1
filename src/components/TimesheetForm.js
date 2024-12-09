@@ -23,6 +23,9 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
       );
+      if (!response.ok) {
+        throw new Error('Failed to fetch address');
+      }
       const data = await response.json();
       return data.display_name;
     } catch (error) {
@@ -101,6 +104,18 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
     }
   };
 
+  const renderLocationInfo = (field) => {
+    if (formData.addresses?.[field]) {
+      return (
+        <div className="text-xs text-gray-500 mt-1">
+          <MapPin className="w-3 h-3 inline mr-1" />
+          {formData.addresses[field]}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex justify-between items-center mb-4">
@@ -111,6 +126,12 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
           </button>
         )}
       </div>
+
+      {locationStatus && (
+        <div className="text-yellow-600 mb-4">
+          {locationStatus}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,12 +172,7 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
                   <MapPin className="w-4 h-4" />
                 </button>
               </div>
-              {formData.addresses?.[field] && (
-                <div className="text-xs text-gray-500 mt-1">
-                  <MapPin className="w-3 h-3 inline mr-1" />
-                  {formData.addresses[field]}
-                </div>
-              )}
+              {renderLocationInfo(field)}
             </div>
           ))}
 
@@ -213,12 +229,6 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
             />
           </div>
         </div>
-
-        {locationStatus && (
-          <div className="text-sm text-yellow-600">
-            {locationStatus}
-          </div>
-        )}
 
         <div className="flex justify-end gap-2">
           {onCancel && (

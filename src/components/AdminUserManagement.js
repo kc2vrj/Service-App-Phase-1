@@ -4,7 +4,7 @@ import { doc, setDoc, collection, getDocs, deleteDoc, updateDoc } from 'firebase
 import { db } from '../lib/firebase';
 import { UserPlus, Trash2, Edit2, Key } from 'lucide-react';
 
-export default function AdminUserManagement() {
+const AdminUserManagement = () => {
   const [users, setUsers] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
@@ -18,23 +18,7 @@ export default function AdminUserManagement() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  const fetchUsers = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, 'users'));
-      const usersData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setUsers(usersData);
-    } catch (err) {
-      setError('Failed to fetch users');
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const [loading, setLoading] = useState(true);
 
   const resetForm = () => {
     setFormData({
@@ -49,17 +33,35 @@ export default function AdminUserManagement() {
     setNewTempPassword('');
   };
 
-  const handleEdit = (user) => {
-    setEditingUser(user);
-    setShowPasswordReset(false);
-    setNewTempPassword('');
-    setFormData({
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      email: user.email || '',
-      userLevel: user.role || 'USER',
-      id: user.id
-    });
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'users'));
+      const usersData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUsers(usersData);
+      setError('');
+    } catch (err) {
+      setError('Failed to fetch users');
+      console.error('Error fetching users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const validateForm = () => {
+    if (!formData.firstName.trim()) return 'First name is required';
+    if (!formData.lastName.trim()) return 'Last name is required';
+    if (!editingUser && !formData.email.trim()) return 'Email is required';
+    if (!editingUser && !formData.tempPassword) return 'Temporary password is required';
+    if (!editingUser && formData.tempPassword.length < 6) return 'Password must be at least 6 characters';
+    return null;
   };
 
   const handleSubmit = async (e) => {
@@ -67,18 +69,26 @@ export default function AdminUserManagement() {
     setError('');
     setSuccess('');
 
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     try {
       if (editingUser) {
-        // Update user data
         const userDocRef = doc(db, 'users', editingUser.id);
         const updateData = {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
           role: formData.userLevel,
           updatedAt: new Date().toISOString()
         };
 
         if (showPasswordReset && newTempPassword) {
+          if (newTempPassword.length < 6) {
+            throw new Error('Password must be at least 6 characters');
+          }
           updateData.forcePasswordChange = true;
           // Note: Actual password update would need to be handled by a backend service
           console.log('Password reset requested:', newTempPassword);
@@ -88,18 +98,17 @@ export default function AdminUserManagement() {
         setSuccess('User updated successfully');
         resetForm();
       } else {
-        // Create new user
         const auth = getAuth();
         const userCredential = await createUserWithEmailAndPassword(
           auth,
-          formData.email,
+          formData.email.trim(),
           formData.tempPassword
         );
 
         await setDoc(doc(db, 'users', userCredential.user.uid), {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim(),
           role: formData.userLevel,
           forcePasswordChange: true,
           createdAt: new Date().toISOString()
@@ -111,40 +120,62 @@ export default function AdminUserManagement() {
 
       fetchUsers();
     } catch (err) {
-      setError(err.message);
+      console.error('Error:', err);
+      setError(err.message || 'An error occurred');
     }
+  };
+
+  const handleEdit = (user) => {
+    setEditingUser(user);
+    setShowPasswordReset(false);
+    setNewTempPassword('');
+    setFormData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      userLevel: user.role || 'USER',
+      id: user.id
+    });
+    setError('');
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await deleteDoc(doc(db, 'users', userId));
-        setSuccess('User deleted successfully');
-        fetchUsers();
-      } catch (err) {
-        setError('Failed to delete user');
-      }
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+
+    try {
+      await deleteDoc(doc(db, 'users', userId));
+      setSuccess('User deleted successfully');
+      fetchUsers();
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError('Failed to delete user');
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-6">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <div className="bg-[#1b1464] text-white p-6 rounded-t-lg">
-          <h1 className="text-3xl font-bold">
+      <div className="bg-white shadow rounded-lg mb-8">
+        <div className="p-6">
+          <h2 className="text-xl font-bold mb-4">
             {editingUser ? 'Edit User' : 'Create New User'}
-          </h1>
-        </div>
-
-        <div className="bg-white shadow-lg rounded-b-lg p-6">
+          </h2>
+          
           {error && (
-            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
               {error}
             </div>
           )}
           
           {success && (
-            <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+            <div className="mb-4 p-4 bg-green-100 text-green-700 rounded">
               {success}
             </div>
           )}
@@ -158,7 +189,7 @@ export default function AdminUserManagement() {
                   required
                   value={formData.firstName}
                   onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-md focus:ring-[#1b1464] focus:border-[#1b1464]"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               
@@ -169,7 +200,7 @@ export default function AdminUserManagement() {
                   required
                   value={formData.lastName}
                   onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-md focus:ring-[#1b1464] focus:border-[#1b1464]"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -178,11 +209,11 @@ export default function AdminUserManagement() {
               <label className="block text-sm font-medium text-gray-700">Email</label>
               <input
                 type="email"
-                required={!editingUser}
+                required
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 disabled={editingUser}
-                className="w-full px-3 py-2 border rounded-md focus:ring-[#1b1464] focus:border-[#1b1464]"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
               />
             </div>
 
@@ -191,10 +222,10 @@ export default function AdminUserManagement() {
                 <label className="block text-sm font-medium text-gray-700">Initial Password</label>
                 <input
                   type="password"
-                  required={!editingUser}
+                  required
                   value={formData.tempPassword}
                   onChange={(e) => setFormData({...formData, tempPassword: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-md focus:ring-[#1b1464] focus:border-[#1b1464]"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   minLength="6"
                 />
               </div>
@@ -207,7 +238,7 @@ export default function AdminUserManagement() {
                   <button
                     type="button"
                     onClick={() => setShowPasswordReset(!showPasswordReset)}
-                    className="flex items-center gap-2 text-[#1b1464] hover:text-blue-700"
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
                   >
                     <Key className="w-4 h-4" />
                     {showPasswordReset ? 'Cancel Password Reset' : 'Reset Password'}
@@ -223,13 +254,10 @@ export default function AdminUserManagement() {
                       type="password"
                       value={newTempPassword}
                       onChange={(e) => setNewTempPassword(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-[#1b1464] focus:border-[#1b1464]"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       minLength="6"
                       required={showPasswordReset}
                     />
-                    <p className="mt-1 text-sm text-gray-500">
-                      User will be required to change this password at next login
-                    </p>
                   </div>
                 )}
               </div>
@@ -240,7 +268,7 @@ export default function AdminUserManagement() {
               <select
                 value={formData.userLevel}
                 onChange={(e) => setFormData({...formData, userLevel: e.target.value})}
-                className="w-full px-3 py-2 border rounded-md focus:ring-[#1b1464] focus:border-[#1b1464]"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               >
                 <option value="USER">USER</option>
                 <option value="OFFICE">OFFICE</option>
@@ -251,7 +279,7 @@ export default function AdminUserManagement() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="flex-1 bg-[#ed1c24] text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center justify-center gap-2"
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center justify-center gap-2"
               >
                 <UserPlus className="w-4 h-4" />
                 {editingUser ? 'Update User' : 'Create User'}
@@ -271,48 +299,54 @@ export default function AdminUserManagement() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-lg">
-        <div className="bg-[#1b1464] text-white p-4 rounded-t-lg">
-          <h2 className="text-xl font-bold">Manage Users</h2>
-        </div>
-        <div className="overflow-x-auto p-4">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-4 py-2 text-left">Name</th>
-                <th className="px-4 py-2 text-left">Email</th>
-                <th className="px-4 py-2 text-left">Role</th>
-                <th className="px-4 py-2 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(user => (
-                <tr key={user.id} className="border-t">
-                  <td className="px-4 py-2">{`${user.firstName} ${user.lastName}`}</td>
-                  <td className="px-4 py-2">{user.email}</td>
-                  <td className="px-4 py-2">{user.role}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="text-[#1b1464] hover:text-blue-700"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="text-[#ed1c24] hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+      <div className="bg-white shadow rounded-lg">
+        <div className="p-6">
+          <h2 className="text-xl font-bold mb-4">Manage Users</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.map(user => (
+                  <tr key={user.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.firstName} {user.lastName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{user.role}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit user"
+                        >
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete user"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default AdminUserManagement;
