@@ -1,63 +1,82 @@
-import { useAuth } from '../contexts/AuthContext';
+import React from 'react';
 import Link from 'next/link';
-import { Users, Clock, LogOut, Calendar } from 'lucide-react';
+import { Users, Clock, LogOut, Calendar, FileText, Menu, X } from 'lucide-react';
+import { cn } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
 
-export default function Navigation() {
+const Navigation = () => {
   const { user, logout } = useAuth();
-
+  
   return (
-    <nav className="bg-[#1b1464] text-white">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between h-20">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/">
-                <a className="text-2xl font-bold">
-                  <span className="text-[#ed1c24]">STRAT</span> Fire Security
-                </a>
-              </Link>
-            </div>
-            
-            <div className="ml-10 flex items-center space-x-4">
-              <Link href="/timesheet-daily">
-                <a className="flex items-center px-3 py-2 rounded-md text-white hover:bg-[#2d237a]">
-                  <Clock className="w-4 h-4 mr-2" />
-                  Daily View
-                </a>
-              </Link>
+    <header className="bg-primary supports-[backdrop-filter]:bg-primary/80 backdrop-blur sticky top-0 z-50 shadow-soft-md">
+      <div className="content-width">
+        <div className="flex justify-between items-center h-20">
+          {/* Logo Section */}
+          <Link href="/" className="flex items-center hover-lift">
+            <img
+              src="/maytech-logo.jpg"
+              alt="Maytech Systems"
+              className="h-12 w-auto"
+            />
+          </Link>
 
-              <Link href="/timesheet-weekly">
-                <a className="flex items-center px-3 py-2 rounded-md text-white hover:bg-[#2d237a]">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Weekly View
-                </a>
+          {/* Right Section: Combining Navigation and User Section */}
+          <div className="flex items-center gap-4">
+            {/* Main Navigation */}
+            <nav className="hidden md:flex items-center gap-2">
+              <Link
+                href="/timesheet-daily"
+                className="flex items-center px-4 py-2.5 text-primary-foreground hover:bg-white/10 rounded-md transition-all duration-200 hover-lift"
+              >
+                <Clock className="w-4 h-4 mr-2.5" />
+                <span className="text-sm font-medium">Daily View</span>
               </Link>
               
+              <Link
+                href="/timesheet-weekly"
+                className="flex items-center px-4 py-2.5 text-primary-foreground hover:bg-white/10 rounded-md transition-all duration-200 hover-lift"
+              >
+                <Calendar className="w-4 h-4 mr-2.5" />
+                <span className="text-sm font-medium">Weekly View</span>
+              </Link>
+
+              <Link
+                href="/quotes"
+                className="flex items-center px-4 py-2.5 text-primary-foreground hover:bg-white/10 rounded-md transition-all duration-200 hover-lift"
+              >
+                <FileText className="w-4 h-4 mr-2.5" />
+                <span className="text-sm font-medium">Quotes</span>
+              </Link>
+
               {user?.role === 'ADMIN' && (
-                <Link href="/admin/user-management">
-                  <a className="flex items-center px-3 py-2 rounded-md text-white hover:bg-[#2d237a]">
-                    <Users className="w-4 h-4 mr-2" />
-                    User Management
-                  </a>
+                <Link
+                  href="/admin/user-management"
+                  className="flex items-center px-4 py-2 text-white hover:bg-[#0052D6] rounded-md transition-colors duration-200"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  <span className="text-sm font-semibold">User Management</span>
                 </Link>
               )}
-            </div>
-          </div>
+            </nav>
 
-          <div className="flex items-center space-x-4">
-            <span className="text-white">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <button
-              onClick={logout}
-              className="flex items-center px-3 py-2 rounded-md text-white hover:bg-[#2d237a]"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </button>
+            {/* User Section */}
+            <div className="flex items-center gap-4 border-l border-white/10 pl-4">
+              <span className="text-white text-sm font-semibold">
+                {user?.firstName} {user?.lastName}
+              </span>
+              <button
+                onClick={logout}
+                className="flex items-center px-4 py-2 text-white hover:bg-[#0052D6] rounded-md transition-colors duration-200"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                <span className="text-sm font-semibold">Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </nav>
+    </header>
   );
-}
+};
+
+export default Navigation;

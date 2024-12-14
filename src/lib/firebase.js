@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentSingleTabManager } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -11,22 +11,19 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase only if it hasn't been initialized already
+// Initialize Firebase only if there isn't already an instance
 let app;
+let db;
+let auth;
+
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
 } else {
   app = getApps()[0];
 }
 
-// Initialize Firestore with persistence
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentSingleTabManager()
-  }),
-  experimentalForceLongPolling: true, // Add this line to force long polling
-});
-
-const auth = getAuth(app);
+// Initialize Firestore and Auth
+db = getFirestore(app);
+auth = getAuth(app);
 
 export { db, auth };

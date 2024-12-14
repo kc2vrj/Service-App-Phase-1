@@ -1,159 +1,38 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  /* Colors */
-  --color-primary: #1b1464;
-  --color-primary-hover: #2d237a;
-  --color-primary-light: #2f2578;
-  --color-primary-dark: #130f4a;
-  --color-primary-contrast: #ffffff;
-  
-  --color-secondary: #ed1c24;
-  --color-secondary-hover: #d31118;
-  --color-secondary-light: #ff343b;
-  --color-secondary-dark: #b8151b;
-  --color-secondary-contrast: #ffffff;
-  
-  /* Typography */
-  --font-family-base: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-  
-  /* Spacing */
-  --container-padding: 1rem;
-  --navbar-height: 5rem;
-  
-  /* Border Radius */
-  --border-radius-base: 0.25rem;
-  --border-radius-lg: 0.5rem;
-
-  /* Logo Background Settings */
-  --logo-background-image: url('/images/logo-pattern.svg');
-  --logo-background-size: 400px;
-  --logo-opacity: 0.05;
-  --logo-angle: -15deg;
-  --logo-spacing-x: 300px;
-  --logo-spacing-y: 300px;
-  --logo-animation-duration: 60s;
+/* Reset default styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-/* Base Styles */
+/* Base styles */
 html,
 body {
   padding: 0;
   margin: 0;
-  font-family: var(--font-family-base);
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
-/* Logo Background Styles */
-.logo-background {
-  position: relative;
-  overflow: hidden;
+/* Utility classes */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
-.logo-background::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: var(--logo-background-image);
-  background-size: var(--logo-background-size);
-  opacity: var(--logo-opacity);
-  transform: rotate(var(--logo-angle));
-  pointer-events: none;
-  z-index: 0;
-  background-position: center;
-  animation: subtleFloat var(--logo-animation-duration) linear infinite;
-}
-
-@keyframes subtleFloat {
-  0% {
-    background-position: 0 0;
+/* Dark mode considerations */
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
   }
-  100% {
-    background-position: var(--logo-spacing-x) var(--logo-spacing-y);
+  body {
+    color: white;
+    background: black;
   }
-}
-
-/* Content wrapper */
-.content-wrapper {
-  position: relative;
-  z-index: 1;
-}
-
-/* Component Classes */
-.strat-navbar {
-  @apply bg-[var(--color-primary)] text-[var(--color-primary-contrast)];
-  height: var(--navbar-height);
-  position: relative;
-  z-index: 2;
-}
-
-.strat-container {
-  @apply max-w-7xl mx-auto px-4;
-  padding: var(--container-padding);
-}
-
-.strat-button-primary {
-  @apply px-4 py-2 rounded-md;
-  background-color: var(--color-primary);
-  color: var(--color-primary-contrast);
-}
-
-.strat-button-primary:hover {
-  background-color: var(--color-primary-hover);
-}
-
-.strat-button-secondary {
-  @apply px-4 py-2 rounded-md;
-  background-color: var(--color-secondary);
-  color: var(--color-secondary-contrast);
-}
-
-.strat-button-secondary:hover {
-  background-color: var(--color-secondary-hover);
-}
-
-.strat-input {
-  @apply w-full px-3 py-2 border rounded-md;
-  border-color: var(--color-primary);
-}
-
-.strat-input:focus {
-  @apply outline-none ring-2;
-  ring-color: var(--color-primary-light);
-}
-
-.strat-card {
-  @apply bg-white rounded-lg shadow-lg;
-  border-radius: var(--border-radius-lg);
-}
-
-.strat-card-header {
-  background-color: var(--color-primary);
-  color: var(--color-primary-contrast);
-  border-top-left-radius: var(--border-radius-lg);
-  border-top-right-radius: var(--border-radius-lg);
-  padding: 1rem;
-}
-
-/* Page Layout Styles */
-.page-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.main-content {
-  flex: 1;
-  padding: var(--container-padding);
-  position: relative;
-  z-index: 1;
 }

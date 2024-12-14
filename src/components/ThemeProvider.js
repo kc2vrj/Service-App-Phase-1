@@ -1,3 +1,4 @@
+// src/components/ThemeProvider.js
 import React, { useEffect } from 'react';
 import themeConfig from '../config/theme.config';
 
@@ -5,32 +6,45 @@ const ThemeProvider = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
     
-    // Colors
-    Object.entries(themeConfig.colors).forEach(([key, values]) => {
-      Object.entries(values).forEach(([subKey, value]) => {
-        root.style.setProperty(`--color-${key}-${subKey}`, value);
+    // Set color variables
+    Object.entries(themeConfig.colors).forEach(([colorKey, colorValues]) => {
+      Object.entries(colorValues).forEach(([key, value]) => {
+        root.style.setProperty(`--color-${colorKey}-${key}`, value);
       });
     });
 
-    // Typography
-    root.style.setProperty('--font-family-base', themeConfig.typography.fontFamily);
+    // Set typography variables
+    root.style.setProperty('--typography-font-family', themeConfig.typography.fontFamily);
 
-    // Layout
-    root.style.setProperty('--container-padding', themeConfig.layout.containerPadding);
-    root.style.setProperty('--navbar-height', themeConfig.layout.navbarHeight);
-    root.style.setProperty('--border-radius-base', themeConfig.layout.borderRadius.base);
-    root.style.setProperty('--border-radius-lg', themeConfig.layout.borderRadius.large);
+    // Set layout variables
+    root.style.setProperty('--layout-max-width', themeConfig.layout.maxWidth);
+    root.style.setProperty('--layout-navbar-height', themeConfig.layout.navbarHeight);
+    root.style.setProperty('--layout-container-padding', themeConfig.layout.containerPadding.desktop);
 
-    // Logo Pattern
-    const { pattern } = themeConfig.logo;
-    root.style.setProperty('--logo-background-image', `url(${pattern.path})`);
-    root.style.setProperty('--logo-background-size', pattern.size);
-    root.style.setProperty('--logo-opacity', pattern.opacity.toString());
-    root.style.setProperty('--logo-angle', pattern.angle);
-    root.style.setProperty('--logo-spacing-x', pattern.spacing.x);
-    root.style.setProperty('--logo-spacing-y', pattern.spacing.y);
-    root.style.setProperty('--logo-animation-duration', pattern.animation.duration);
-    root.style.setProperty('--logo-animation-enabled', pattern.animation.enabled ? '1' : '0');
+    // Set responsive padding
+    const setResponsivePadding = () => {
+      if (typeof window === 'undefined') return;
+      
+      const width = window.innerWidth;
+      if (width < 640) {
+        root.style.setProperty('--layout-container-padding', themeConfig.layout.containerPadding.mobile);
+      } else if (width < 1024) {
+        root.style.setProperty('--layout-container-padding', themeConfig.layout.containerPadding.tablet);
+      } else {
+        root.style.setProperty('--layout-container-padding', themeConfig.layout.containerPadding.desktop);
+      }
+    };
+
+    setResponsivePadding();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', setResponsivePadding);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', setResponsivePadding);
+      }
+    };
   }, []);
 
   return <div className="theme-provider">{children}</div>;
