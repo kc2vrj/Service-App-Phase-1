@@ -4,8 +4,7 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import TimesheetTable from '../components/timesheet/TimesheetTable';
 import { useTimesheetOperations } from '../hooks/useTimesheetOperations';
-import TimesheetForm from '../components/TimesheetForm';
-import Logo from '../components/Logo';
+import ModernTimesheetForm from '../components/ModernTimesheetForm';
 
 export default function DailyView() {
   const { user } = useAuth();
@@ -91,7 +90,7 @@ export default function DailyView() {
 
   return (
     <div className="p-6">
-      <TimesheetForm 
+      <ModernTimesheetForm 
         onSubmit={handleSubmit}
         initialData={{
           date: new Date().toISOString().split('T')[0]
@@ -121,7 +120,7 @@ export default function DailyView() {
       {editingEntry && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-4xl w-full">
-            <TimesheetForm
+            <ModernTimesheetForm
               initialData={editingEntry}
               onSubmit={handleUpdateEntry}
               onCancel={() => setEditingEntry(null)}

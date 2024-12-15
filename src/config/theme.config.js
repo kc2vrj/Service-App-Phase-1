@@ -21,7 +21,7 @@ const themeConfig = {
     companyShortName: 'Maytech',
     logo: {
       path: '/maytech-logo.jpg',
-      width: '200px',
+      width: '60px',
       height: 'auto'
     }
   },
