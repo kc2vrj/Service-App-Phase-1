@@ -1,173 +1,151 @@
-# Theme Configuration Guide
+# Maytech Timesheet & Quote Management System
 
-## Table of Contents
-1. [Basic Theme Configuration](#basic-theme-configuration)
-2. [Color System](#color-system)
-3. [Logo & Background Settings](#logo--background-settings)
-4. [Common Customizations](#common-customizations)
-5. [Advanced Usage](#advanced-usage)
+A comprehensive web application for managing employee timesheets and creating equipment quotes, built with Next.js, Firebase, and Tailwind CSS.
 
-## Basic Theme Configuration
+## Features
 
-Theme changes are managed through the `theme.config.js` file located in `src/config/`. This is your central location for all visual customizations.
+### Timesheet Management
+- Daily and weekly timesheet views
+- Automatic time tracking with location support
+- Travel time and work hours logging
+- Customer and work order tracking
+- Notes and detailed entry management
 
-### Example Configuration
-```javascript
-// src/config/theme.config.js
-const themeConfig = {
-  colors: {
-    primary: {
-      main: '#1b1464',      // Main brand color
-      hover: '#2d237a',     // Hover state
-      light: '#2f2578',     // Lighter variant
-      dark: '#130f4a',      // Darker variant
-      contrast: '#ffffff'   // Text color on primary background
-    },
-    secondary: {
-      main: '#ed1c24',      // Secondary brand color
-      hover: '#d31118',     // Hover state
-      light: '#ff343b',     // Lighter variant
-      dark: '#b8151b',      // Darker variant
-      contrast: '#ffffff'   // Text color on secondary background
-    }
-  },
-  branding: {
-    companyName: 'STRAT Fire Security',
-    companyShortName: 'STRAT',
-    logo: {
-      path: '/images/logo-pattern.svg',
-      background: {
-        size: '400px',
-        opacity: 0.05,
-        angle: '-15deg',
-        spacingX: '300px',
-        spacingY: '300px',
-        animationDuration: '60s',
-        enabled: true
-      }
-    }
-  }
-};
+### Quote System
+- Professional quote creation
+- Line item management with automatic calculations
+- Tax rate configuration
+- Print-friendly formatting
+- Quote status tracking
+
+### User Management
+- Role-based access control (USER, OFFICE, ADMIN)
+- Secure authentication
+- Password management
+- User profile management
+
+### Security Features
+- Firebase Authentication integration
+- Secure data storage
+- Input sanitization
+- Rate limiting
+- Error logging and monitoring
+
+## Technical Stack
+
+- **Frontend**: Next.js, React
+- **UI Components**: shadcn/ui, Tailwind CSS
+- **Authentication**: Firebase Auth
+- **Database**: Firebase Firestore
+- **Icons**: Lucide React
+- **Form Handling**: Native React forms
+- **State Management**: React Context
+
+## Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+- Firebase account and project
+- Git
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone [repository-url]
+cd timesheet-app
 ```
 
-## Color System
-
-### Changing Brand Colors
-To change your brand colors, modify the color values in the config:
-
-```javascript
-colors: {
-  primary: {
-    main: '#YOUR_NEW_COLOR',
-    hover: '#HOVER_COLOR',
-    // ...
-  }
-}
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
 ```
 
-### Available Color Properties
-- `main`: Primary color for components
-- `hover`: Color for hover states
-- `light`: Lighter variant for backgrounds
-- `dark`: Darker variant for emphasis
-- `contrast`: Text color to use on this background
-
-## Logo & Background Settings
-
-### Logo Configuration
-```javascript
-branding: {
-  logo: {
-    path: '/images/your-logo.svg',    // Path to your logo file
-    background: {
-      size: '400px',                  // Size of background pattern
-      opacity: 0.05,                  // Opacity (0-1)
-      angle: '-15deg',                // Rotation angle
-      spacingX: '300px',              // Horizontal spacing
-      spacingY: '300px',              // Vertical spacing
-      animationDuration: '60s',       // Animation speed
-      enabled: true                   // Toggle background
-    }
-  }
-}
+3. Configure environment variables:
+Create a `.env.local` file with the following variables:
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
 ```
 
-### Background Pattern Settings
-- `size`: Controls the size of the repeated pattern
-- `opacity`: Controls how visible the pattern is (0 = invisible, 1 = fully visible)
-- `angle`: Rotates the pattern (e.g., '45deg', '-90deg')
-- `spacingX/Y`: Controls the distance between pattern repetitions
-- `animationDuration`: Controls how fast the pattern moves
-
-## Common Customizations
-
-### Change Company Name
-```javascript
-branding: {
-  companyName: 'Your Company Name',
-  companyShortName: 'YCN'
-}
+4. Start the development server:
+```bash
+npm run dev
+# or
+yarn dev
 ```
 
-### Adjust Logo Background
-```javascript
-// Make background more subtle
-background: {
-  opacity: 0.03,
-  size: '600px'
-}
+## Project Structure
 
-// Change animation speed
-background: {
-  animationDuration: '90s'  // Slower
-  // or
-  animationDuration: '30s'  // Faster
-}
+```
+├── components/          # React components
+├── contexts/           # Context providers
+├── hooks/              # Custom React hooks
+├── lib/               # Utility functions and configurations
+├── middleware/        # Application middleware
+├── pages/             # Next.js pages
+├── public/            # Static assets
+├── services/          # Business logic services
+└── styles/            # Global styles and themes
 ```
 
-### Disable Background Pattern
-```javascript
-background: {
-  enabled: false
-}
-```
+## Key Components
 
-## Advanced Usage
+- `TimesheetApp`: Main timesheet management component
+- `QuoteForm`: Quote creation and management
+- `AdminUserManagement`: User administration interface
+- `Navigation`: Main navigation component
+- `ErrorBoundary`: Global error handling
 
-### Custom Pattern
-1. Create your SVG pattern
-2. Place it in `public/images/`
-3. Update the config:
-```javascript
-logo: {
-  path: '/images/your-pattern.svg'
-}
-```
+## Security Features
 
-### Responsive Adjustments
-Modify the layout settings for different screen sizes:
-```javascript
-layout: {
-  maxWidth: '80rem',
-  containerPadding: {
-    mobile: '1rem',
-    tablet: '2rem',
-    desktop: '4rem'
-  }
-}
-```
+- Input sanitization for all user inputs
+- Rate limiting for authentication attempts
+- Secure Firebase rules implementation
+- Error logging and monitoring
+- Role-based access control
 
-### Additional Theme Properties
-You can add custom properties:
-```javascript
-themeConfig: {
-  // ... existing config
-  custom: {
-    borderRadius: '0.5rem',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    transition: '0.3s ease-in-out'
-  }
-}
-```
+## Available Scripts
 
-Remember to restart your development server after making changes to the theme configuration to ensure all changes are applied properly.
+- `npm run dev`: Start development server
+- `npm run build`: Build production application
+- `npm start`: Start production server
+- `npm run lint`: Run ESLint
+
+## Deployment
+
+The application can be deployed to various platforms. Here are the steps for Vercel deployment:
+
+1. Push your code to a Git repository
+2. Connect your repository to Vercel
+3. Configure environment variables in Vercel
+4. Deploy
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support, please contact [support email/contact information].
+
+## Acknowledgments
+
+- shadcn/ui for the component library
+- Lucide React for icons
+- Firebase for backend services
+- Tailwind CSS for styling
