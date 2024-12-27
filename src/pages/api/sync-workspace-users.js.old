@@ -1,0 +1,21 @@
+// pages/api/sync-workspace-users.js
+import { EnhancedGoogleWorkspaceAuth } from '../../lib/google/googleWorkspace';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  try {
+    const workspaceAuth = new EnhancedGoogleWorkspaceAuth();
+    const result = await workspaceAuth.syncUsers();
+    
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Sync error:', error);
+    res.status(500).json({ 
+      error: 'Failed to sync workspace users',
+      details: error.message 
+    });
+  }
+}

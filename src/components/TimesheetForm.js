@@ -1,7 +1,17 @@
+/**
+ * TimesheetForm Component
+ * A form for creating and editing timesheet entries with location tracking
+ * 
+ * @param {Object} initialData - Initial form data for editing existing entries
+ * @param {Function} onSubmit - Callback function when form is submitted
+ * @param {Function} onCancel - Callback function when form is cancelled
+ */
+
 import React, { useState } from 'react';
 import { Plus, MapPin, Clock, X } from 'lucide-react';
 
 const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
+  // Initialize form state with default values or provided data
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     travelStart: '',
@@ -12,12 +22,18 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
     workOrder: '',
     address: '',
     notes: '',
-    location: {},
+    locations: {},
     addresses: {},
     ...initialData
   });
   const [locationStatus, setLocationStatus] = useState('');
 
+  /**
+   * Converts coordinates to address using OpenStreetMap API
+   * @param {number} latitude - Location latitude
+   * @param {number} longitude - Location longitude
+   * @returns {Promise<string>} Address string
+   */
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       const response = await fetch(
@@ -34,26 +50,39 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
     }
   };
 
+  /**
+   * Gets current time
+   * @returns {string} Current time in HH:mm format
+   */
   const getCurrentTime = () => {
     const now = new Date();
     return now.toTimeString().slice(0, 5);
   };
 
+  /**
+   * Updates form data with current time and location
+   * @param {string} field - Name of time field being updated
+   */
   const handleQuickTimeEntry = async (field) => {
     if (!navigator.geolocation) {
-      setLocationStatus('Geolocation not supported');
+      setLocationStatus('Geolocation is not supported by your browser');
       return;
     }
 
     try {
       const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject);
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        });
       });
 
       const currentTime = getCurrentTime();
       const location = {
         latitude: position.coords.latitude,
-        longitude: position.coords.longitude
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy
       };
 
       // Get address for the location
@@ -62,8 +91,8 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
       setFormData(prev => ({
         ...prev,
         [field]: currentTime,
-        location: {
-          ...prev.location,
+        locations: {
+          ...prev.locations,
           [field]: location
         },
         addresses: {
@@ -73,43 +102,52 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
       }));
       setLocationStatus('');
     } catch (error) {
-      setLocationStatus('Location access denied');
+      if (error.code === 1) {
+        setLocationStatus('Location access denied. Please enable location services.');
+      } else if (error.code === 2) {
+        setLocationStatus('Location unavailable. Please try again.');
+      } else {
+        setLocationStatus('Error getting location. Please try again.');
+      }
       console.error('Geolocation error:', error);
     }
   };
 
+  /**
+   * Updates form data when input fields change
+   * @param {Event} e - Input change event
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  /**
+   * Validates and submits form data
+   * @param {Event} e - Form submission event
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.date || !formData.customerName) return;
     await onSubmit(formData);
-    if (!initialData.id) {
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        travelStart: '',
-        timeIn: '',
-        timeOut: '',
-        travelHome: '',
-        customerName: '',
-        workOrder: '',
-        address: '',
-        notes: '',
-        location: {},
-        addresses: {}
-      });
-    }
   };
 
+  /**
+   * Renders location information for a given field
+   * @param {string} field - Name of time field
+   * @returns {JSX.Element|null} Location information element or null
+   */
   const renderLocationInfo = (field) => {
     if (formData.addresses?.[field]) {
       return (
         <div className="text-xs text-gray-500 mt-1">
           <MapPin className="w-3 h-3 inline mr-1" />
           {formData.addresses[field]}
+          {formData.locations?.[field]?.accuracy && (
+            <span className="ml-1">
+              (±{Math.round(formData.locations[field].accuracy)}m)
+            </span>
+          )}
         </div>
       );
     }
@@ -128,7 +166,7 @@ const TimesheetForm = ({ initialData = {}, onSubmit, onCancel }) => {
       </div>
 
       {locationStatus && (
-        <div className="text-yellow-600 mb-4">
+        <div className="bg-yellow-50 text-yellow-800 p-3 rounded-md mb-4">
           {locationStatus}
         </div>
       )}

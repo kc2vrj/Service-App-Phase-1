@@ -1,0 +1,38 @@
+// src/pages/api/auth/google/callback.ts
+import { NextApiRequest, NextApiResponse } from 'next';
+import { GoogleWorkspaceOAuth } from '../../../../lib/google/googleWorkspace';
+import { getAuth } from 'firebase-admin/auth';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  const { code } = req.query;
+  if (!code || typeof code !== 'string') {
+    return res.status(400).json({ error: 'No code provided' });
+  }
+
+  try {
+    const auth = new GoogleWorkspaceOAuth();
+    const tokens = await auth.getTokens(code);
+    
+    // Get the user ID from the session token
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    const decodedToken = await getAuth().verifyIdToken(token);
+    const userId = decodedToken.uid;
+
+    // Store the tokens
+    await auth.storeTokens(userId, tokens);
+
+    res.redirect('/admin/workspace');
+  } catch (error) {
+    console.error('Callback error:', error);
+    res.status(500).json({ error: 'Failed to process authentication' });
+  }
+}

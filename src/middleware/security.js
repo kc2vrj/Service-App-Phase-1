@@ -1,126 +1,77 @@
-// middleware/security.js
-import { getAuth } from 'firebase-admin/auth';
+// src/middleware/security.js
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-// Rate limiting implementation using Firestore
-export const createRateLimiter = (windowMs = 900000, maxAttempts = 5) => {
-  return async (userIp) => {
-    const attemptsRef = db.collection('loginAttempts').doc(userIp);
-    
-    try {
-      const doc = await attemptsRef.get();
-      const now = Date.now();
-      
-      if (!doc.exists) {
-        await attemptsRef.set({
-          attempts: 1,
-          windowStart: now
-        });
-        return true;
-      }
-
-      const data = doc.data();
-      if (now - data.windowStart > windowMs) {
-        // Reset window
-        await attemptsRef.set({
-          attempts: 1,
-          windowStart: now
-        });
-        return true;
-      }
-
-      if (data.attempts >= maxAttempts) {
-        return false;
-      }
-
-      await attemptsRef.update({
-        attempts: data.attempts + 1
-      });
-      return true;
-    } catch (error) {
-      console.error('Rate limiting error:', error);
-      return true; // Fail open to prevent blocking legitimate users
-    }
-  };
-};
-
-// Input sanitization
-export const sanitizeInput = (input) => {
-  if (typeof input === 'string') {
-    return input.trim()
-      .replace(/[<>]/g, '') // Basic XSS protection
-      .slice(0, 1000); // Limit string length
-  }
-  if (typeof input === 'object' && input !== null) {
-    return Object.entries(input).reduce((acc, [key, value]) => ({
-      ...acc,
-      [key]: sanitizeInput(value),
-    }), {});
-  }
-  return input;
-};
-
-// Auth middleware for API routes
 export const withAuth = (handler) => {
   return async (req, res) => {
+    console.group('🔒 Auth Middleware Check');
+    
     try {
+      // Log auth header (redacted for security)
       const authHeader = req.headers.authorization;
+      console.log('Auth header present:', !!authHeader);
       if (!authHeader?.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        console.error('❌ No token provided');
+        return res.status(401).json({ error: 'No token provided' });
       }
 
-      const token = authHeader.split('Bearer ')[1];
-      const decodedToken = await getAuth().verifyIdToken(token);
-      
-      req.user = decodedToken;
-      return handler(req, res);
-    } catch (error) {
-      console.error('Auth middleware error:', error);
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-  };
-};
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      console.log('Current user:', currentUser?.email || 'none');
 
-// Validation helper
-export const validateRequest = (schema) => {
-  return (data) => {
-    try {
-      const errors = {};
+      if (!currentUser) {
+        console.error('❌ No authenticated user');
+        return res.status(401).json({ 
+          error: 'Not authenticated',
+          details: 'No current user found in Firebase Auth'
+        });
+      }
+
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      console.log('User doc exists:', userDoc.exists());
       
-      Object.entries(schema).forEach(([field, rules]) => {
-        const value = data[field];
-        
-        if (rules.required && !value) {
-          errors[field] = 'This field is required';
-        }
-        
-        if (rules.maxLength && value?.length > rules.maxLength) {
-          errors[field] = `Maximum length is ${rules.maxLength} characters`;
-        }
-        
-        if (rules.pattern && !rules.pattern.test(value)) {
-          errors[field] = rules.message || 'Invalid format';
-        }
+      if (!userDoc.exists()) {
+        console.error('❌ User document not found');
+        return res.status(401).json({ error: 'User not found in database' });
+      }
+
+      const userData = userDoc.data();
+      console.log('User data:', {
+        role: userData?.role,
+        email: userData?.email,
+        uid: currentUser.uid
       });
 
-      return {
-        isValid: Object.keys(errors).length === 0,
-        errors
+      if (!userData?.role || !['ADMIN', 'SUPER_ADMIN'].includes(userData.role)) {
+        console.error('❌ Insufficient privileges');
+        return res.status(403).json({ 
+          error: 'Insufficient privileges',
+          details: `Required: ADMIN or SUPER_ADMIN, Found: ${userData?.role}`
+        });
+      }
+
+      req.user = {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        role: userData.role
       };
+
+      console.log('✅ Authentication successful', req.user);
+      return handler(req, res);
     } catch (error) {
-      console.error('Validation error:', error);
-      return {
-        isValid: false,
-        errors: { _global: 'Validation failed' }
-      };
+      console.error('❌ Auth middleware error:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      
+      return res.status(401).json({ 
+        error: 'Authentication failed',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    } finally {
+      console.groupEnd();
     }
   };
-};
-
-// Example validation schema
-export const timesheetSchema = {
-  date: { required: true },
-  customerName: { required: true, maxLength: 100 },
-  workOrder: { maxLength: 50 },
-  notes: { maxLength: 1000 }
 };

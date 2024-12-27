@@ -3,7 +3,6 @@ import '../styles/globals.css';
 import { AuthProvider } from '../contexts/AuthContext';
 import { TimesheetProvider } from '../components/timesheet/TimesheetContext';
 import ErrorBoundary from '../components/ErrorBoundary';
-import Navigation from '../components/Navigation1';
 
 function MyApp({ Component, pageProps }) {
   return (
@@ -13,12 +12,7 @@ function MyApp({ Component, pageProps }) {
     >
       <AuthProvider>
         <TimesheetProvider>
-          <div className="min-h-screen bg-gray-50">
-            <Navigation />
-            <main className="max-w-7xl mx-auto">
-              <Component {...pageProps} />
-            </main>
-          </div>
+          <Component {...pageProps} />
         </TimesheetProvider>
       </AuthProvider>
     </ErrorBoundary>

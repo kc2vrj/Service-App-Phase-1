@@ -1,136 +1,102 @@
+// src/contexts/AuthContext.js
 import { createContext, useContext, useState, useEffect } from 'react';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged,
-  connectAuthEmulator,
-  setPersistence,
-  browserLocalPersistence
+  onAuthStateChanged 
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useRouter } from 'next/router';
 
 const AuthContext = createContext({});
 
+const publicPaths = ['/', '/login', '/register'];
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const [authInitialized, setAuthInitialized] = useState(false);
   const router = useRouter();
 
-  // Initialize Firebase Auth with persistence
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const auth = getAuth();
-        await setPersistence(auth, browserLocalPersistence);
-        
-        // Set up emulator if in development
-        if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true') {
-          connectAuthEmulator(auth, 'http://localhost:9099');
-        }
-      } catch (err) {
-        console.error('Error initializing auth:', err);
-        setError('Failed to initialize authentication service');
-      }
-    };
+  // Function to create or update user document
+  const ensureUserDocument = async (firebaseUser) => {
+    if (!firebaseUser) return null;
 
-    initializeAuth();
-  }, []);
+    const userRef = doc(db, 'users', firebaseUser.uid);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      console.log('Creating new user document...');
+      // Create new user document
+      const userData = {
+        email: firebaseUser.email,
+        firstName: firebaseUser.displayName?.split(' ')[0] || '',
+        lastName: firebaseUser.displayName?.split(' ')[1] || '',
+        role: 'USER', // Default role
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      };
+
+      await setDoc(userRef, userData);
+      return { id: firebaseUser.uid, ...userData };
+    } else {
+      // Update last login
+      const userData = userDoc.data();
+      await setDoc(userRef, { 
+        ...userData,
+        lastLogin: new Date().toISOString() 
+      }, { merge: true });
+      
+      return { id: firebaseUser.uid, ...userData };
+    }
+  };
+
+  // Handle routing based on auth state
+  useEffect(() => {
+    if (!authInitialized) return;
+
+    const path = router.pathname;
+    if (!user && !publicPaths.includes(path)) {
+      console.log('No user, redirecting to login from:', path);
+      router.push('/login');
+    } else if (user?.forcePasswordChange && path !== '/change-password') {
+      console.log('Force password change, redirecting from:', path);
+      router.push('/change-password');
+    }
+  }, [user, router.pathname, authInitialized]);
 
   // Handle auth state changes
   useEffect(() => {
-    let unsubscribe;
-    let retryTimeout;
-    const maxRetries = 3;
-
-    const setupAuthListener = async () => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        const auth = getAuth();
-
-        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          setConnectionAttempts(0); // Reset counter on successful connection
-          
-          try {
-            if (firebaseUser) {
-              const userDocRef = doc(db, 'users', firebaseUser.uid);
-              const userSnapshot = await getDoc(userDocRef);
-              
-              if (userSnapshot.exists()) {
-                const userData = userSnapshot.data();
-                
-                // Check for required password change
-                if (userData.forcePasswordChange && router.pathname !== '/change-password') {
-                  router.push('/change-password');
-                }
-
-                setUser({
-                  id: firebaseUser.uid,
-                  email: firebaseUser.email,
-                  firstName: userData?.firstName,
-                  lastName: userData?.lastName,
-                  role: userData?.role || 'USER',
-                  forcePasswordChange: userData?.forcePasswordChange
-                });
-              } else {
-                console.warn('User document not found in Firestore');
-                setUser(null);
-              }
-            } else {
-              setUser(null);
-              if (!['/', '/login', '/register'].includes(router.pathname)) {
-                router.push('/login');
-              }
-            }
-          } catch (err) {
-            console.error('Error processing auth state change:', err);
-            setError('Failed to load user data');
-          } finally {
-            setLoading(false);
+        if (firebaseUser) {
+          const userData = await ensureUserDocument(firebaseUser);
+          if (userData) {
+            console.log('User data loaded:', userData);
+            setUser(userData);
+          } else {
+            console.error('Failed to get or create user document');
+            setUser(null);
           }
-        }, (error) => {
-          console.error('Auth state change error:', error);
-          handleConnectionError();
-        });
-
+        } else {
+          console.log('No user signed in');
+          setUser(null);
+        }
       } catch (err) {
-        console.error('Error setting up auth listener:', err);
-        handleConnectionError();
+        console.error('Error in auth state change:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        setAuthInitialized(true);
       }
-    };
+    });
 
-    const handleConnectionError = () => {
-      setConnectionAttempts(prev => prev + 1);
-      
-      if (connectionAttempts < maxRetries) {
-        // Exponential backoff for retries
-        const retryDelay = Math.pow(2, connectionAttempts) * 1000;
-        retryTimeout = setTimeout(setupAuthListener, retryDelay);
-        
-        setError({
-          message: 'Connection issue detected. Retrying...',
-          retryCount: connectionAttempts + 1,
-          maxRetries
-        });
-      } else {
-        setError({
-          message: 'Unable to establish connection',
-          isConnectionError: true
-        });
-      }
-      setLoading(false);
-    };
-
-    setupAuthListener();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-      if (retryTimeout) clearTimeout(retryTimeout);
-    };
-  }, [router, connectionAttempts]);
+    return () => unsubscribe();
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -138,23 +104,15 @@ export function AuthProvider({ children }) {
       setLoading(true);
       
       const auth = getAuth();
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
       
-      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-      const userData = userDoc.data();
-
-      if (userData?.forcePasswordChange) {
-        router.push('/change-password');
-      } else {
-        router.push('/');
-      }
+      // Ensure user document exists
+      await ensureUserDocument(result.user);
+      
       return true;
     } catch (err) {
       console.error('Login error:', err);
-      setError({
-        message: getAuthErrorMessage(err.code),
-        code: err.code
-      });
+      setError(getAuthErrorMessage(err.code));
       return false;
     } finally {
       setLoading(false);
@@ -163,21 +121,16 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      setError(null);
       const auth = getAuth();
       await signOut(auth);
       setUser(null);
       router.push('/login');
     } catch (err) {
       console.error('Logout error:', err);
-      setError({
-        message: 'Failed to log out',
-        code: err.code
-      });
+      setError(err.message);
     }
   };
 
-  // Helper function to provide user-friendly error messages
   const getAuthErrorMessage = (errorCode) => {
     const errorMessages = {
       'auth/invalid-email': 'Invalid email address',
@@ -186,11 +139,18 @@ export function AuthProvider({ children }) {
       'auth/wrong-password': 'Invalid email or password',
       'auth/network-request-failed': 'Network connection error. Please check your internet connection.',
       'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
-      'auth/popup-closed-by-user': 'Login popup was closed before completion.',
     };
 
     return errorMessages[errorCode] || 'An error occurred during authentication';
   };
+
+  if (loading && !authInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{
